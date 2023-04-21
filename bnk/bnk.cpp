@@ -2,6 +2,7 @@
 //
 
 #include <iostream>
+#include <cctype>
 #include <fstream>
 #include <filesystem>
 
@@ -37,7 +38,7 @@ int main()
         {
             directory = fs::weakly_canonical(directory);
             directory = directory.make_preferred();
-            fileout = directory;
+            fileout = directory.parent_path();
             fileout.append("bankfile.bnk");
             cout << "Selected path: " << directory << endl;
             cout << "Selected file: " << fileout << endl;
@@ -46,6 +47,8 @@ int main()
             {
                 cout << "Are you sure you want to select this folder? [y/n]" << endl;
                 cin >> type;
+                type = tolower(type);
+                
             } while (!cin.fail() && type != 'y' && type != 'n');
             if (type == 'y')
             {
@@ -57,6 +60,7 @@ int main()
                     {
                         cout << ".bnk exists here, do you want to overwrite it? [y/n]" << endl;
                         cin >> type;
+                        type = tolower(type);
                     } while (!cin.fail() && type != 'y' && type != 'n');
                     if (type == 'y')
                     {
@@ -103,7 +107,7 @@ int main()
                 loadingStream.seekg(0, ios_base::beg);
                 loadingStream.read(&fileContents[0], fileSize);
                 file.data = fileContents;
-                cout << fileSize << " in ";
+                cout << fileSize << " bytes in ";
                 file.fileSize = fileSize;
             }
             cout << entry.path() << endl;
@@ -137,7 +141,8 @@ int main()
         sizeOfNamesBlock = currentNameOffset + namesBlockPadding;
     }
 
-    cout << namesBlockPadding;
+    cout << "Padding bytes: " << namesBlockPadding << endl;
+    cout << "Writing to disk..." << endl;
 
     // Write the header
 
@@ -193,6 +198,7 @@ int main()
     }
 
     fout.close();
+    cout << "Done!" << endl;
 
     system("pause");
 }
