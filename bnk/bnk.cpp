@@ -6,62 +6,98 @@
 #include <fstream>
 #include <filesystem>
 
-using namespace std;
-namespace fs = filesystem;
+namespace fs = std::filesystem;
 
 struct fileStructure
 {
-    vector<char> name;
-    vector<char> data;
+    std::vector<char> name;
+    std::vector<char> data;
 
     uint32_t dataOffset;
     uint32_t nameOffset;
     uint32_t fileSize;
 };
 
-int main()
-{
-    cout << ".wav folder to Rez .bnk converter" << endl;
 
+int main(int argc, char** argv) // receive the number of arguments and the arguments
+{
+    std::cout << ".wav folder to Rez .bnk converter" << std::endl;
+
+    bool selectedDirectory = false;
 
     fs::path directory;
     fs::path fileout;
-    bool selectedDirectory = false;
 
-    // User input and real directory check
+    // check arguments for paths
+    for (int i = 1; i < argc; ++i) // start at 1 to skip the process name
+    {
+        std::string argument = argv[i];
+
+        if (!selectedDirectory && argument.length() > 0 && argument[0] != '-')
+        {
+            // first path argument
+            if (fs::is_directory(argument))
+            {
+                directory = argument;
+
+                directory = fs::weakly_canonical(directory);
+                directory = directory.make_preferred();
+                fileout = directory.parent_path();
+                fileout.append(directory.filename().string() + ".bnk");
+                std::cout << "Selected path: " << directory << std::endl;
+                std::cout << "Autoselected file: " << fileout << std::endl;
+
+                selectedDirectory = true;
+            }
+            else
+            {
+                std::cout << "Folder does not exist." << std::endl;
+                return 2;
+            }
+        }
+        else if (selectedDirectory && argument.length() > 0 && argument[0] != '-') {
+            // second path argument
+            fileout = argument;
+            std::cout << "Selected file: " << fileout << std::endl;
+        }
+    }
+
+
+    // User input and real directory check, if not passed as argument
     while (!selectedDirectory)
     {
-        cout << "Enter folder:" << endl;
+        std::cout << "Enter folder:" << std::endl;
 
-        cin >> directory;
+        std::cin >> directory;
         if (fs::is_directory(directory))
         {
             directory = fs::weakly_canonical(directory);
             directory = directory.make_preferred();
             fileout = directory.parent_path();
             fileout.append(directory.filename().string() + ".bnk");
-            cout << "Selected path: " << directory << endl;
-            cout << "Selected file: " << fileout << endl;
+            std::cout << "Selected path: " << directory << std::endl;
+            std::cout << "Autoselected file: " << fileout << std::endl;
             char type;
+
             do
             {
-                cout << "Are you sure you want to select this folder? [y/n]" << endl;
-                cin >> type;
+                std::cout << "Are you sure you want to select this folder? [y/n]" << std::endl;
+                std::cin >> type;
                 type = tolower(type);
-                
-            } while (!cin.fail() && type != 'y' && type != 'n');
+
+            } while (!std::cin.fail() && type != 'y' && type != 'n');
             if (type == 'y')
             {
                 // checking if file already exists
-                fstream checkExistsStream;
+                std::fstream checkExistsStream;
                 checkExistsStream.open(fileout);
                 if (checkExistsStream) {
                     do
                     {
-                        cout << ".bnk exists here, do you want to overwrite it? [y/n]" << endl;
-                        cin >> type;
+                        std::cout << ".bnk exists here, do you want to overwrite it? [y/n]" << std::endl;
+                        std::cin >> type;
                         type = tolower(type);
-                    } while (!cin.fail() && type != 'y' && type != 'n');
+                    } while (!std::cin.fail() && type != 'y' && type != 'n');
                     if (type == 'y')
                     {
                         selectedDirectory = true;
@@ -75,7 +111,7 @@ int main()
         }
         else
         {
-            cout << "Folder does not exist, try again." << endl;
+            std::cout << "Folder does not exist, try again." << std::endl;
         }
     }
 
@@ -87,35 +123,35 @@ int main()
 
     uint32_t currentDataOffset = 0;
     uint32_t currentNameOffset = 0;
-    vector<fileStructure> files;
+    std::vector<fileStructure> files;
 
     int i = 1;
     for (const fs::directory_entry entry : fs::directory_iterator(directory))
     {
-        if (entry.path().extension() != ".bnk" && !entry.is_directory()) // ignore a bnk file if it already exists and skip subfolders
+        if (entry.path().extension() != ".bnk" && !entry.is_directory()) // skip any subfolders or .bnk files within the folder
         {
             fileStructure file;
 
-            ifstream loadingStream (entry.path(), ios::in | ios::binary);
+            std::ifstream loadingStream (entry.path(), std::ios::in | std::ios::binary);
             if (!loadingStream.eof() && !loadingStream.fail())
             {
-                vector<char> fileContents;
-                loadingStream.seekg(0, ios_base::end);
-                streampos fileSize = loadingStream.tellg();
+                std::vector<char> fileContents;
+                loadingStream.seekg(0, std::ios_base::end);
+                std::streampos fileSize = loadingStream.tellg();
                 fileContents.resize(fileSize);
 
-                loadingStream.seekg(0, ios_base::beg);
+                loadingStream.seekg(0, std::ios_base::beg);
                 if (fileSize > 0) {
                     loadingStream.read(&fileContents[0], fileSize);
                 }
                 file.data = fileContents;
-                cout << fileSize << " bytes in ";
+                std::cout << fileSize << " bytes in ";
                 file.fileSize = fileSize;
             }
-            cout << entry.path() << endl;
+            std::cout << entry.path() << std::endl;
             
-            string fileNameString = entry.path().filename().string();
-            vector<char> fileName(fileNameString.begin(), fileNameString.end());
+            std::string fileNameString = entry.path().filename().string();
+            std::vector<char> fileName(fileNameString.begin(), fileNameString.end());
             fileName.push_back(0); // adds ending 0x00 byte to name;
             file.name = fileName;
 
@@ -134,21 +170,14 @@ int main()
     
     // round current name offset up to next 16 bytes to determine size of names block
     int namesBlockPadding = 16 - (currentNameOffset % 16);
-    if (namesBlockPadding == 0)
-    {
-        sizeOfNamesBlock = currentNameOffset;
-    }
-    else
-    {
-        sizeOfNamesBlock = currentNameOffset + namesBlockPadding;
-    }
+    sizeOfNamesBlock = currentNameOffset + namesBlockPadding;
 
-    cout << "Padding bytes: " << namesBlockPadding << endl;
-    cout << "Writing to disk..." << endl;
+    std::cout << "Padding bytes: " << namesBlockPadding << std::endl;
+    std::cout << "Writing to disk..." << std::endl;
 
     // Write the header
 
-    ofstream fout (fileout, ios::out | ios::binary);
+    std::ofstream fout (fileout, std::ios::out | std::ios::binary);
 
     fout.write((char*)&zero, sizeof zero);
     fout.write((char*)&numberOfFiles, sizeof numberOfFiles);
@@ -200,9 +229,7 @@ int main()
     }
 
     fout.close();
-    cout << "Done!" << endl;
-
-    system("pause");
+    std::cout << "Done!" << std::endl;
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
