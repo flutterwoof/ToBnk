@@ -39,7 +39,7 @@ int main()
             directory = fs::weakly_canonical(directory);
             directory = directory.make_preferred();
             fileout = directory.parent_path();
-            fileout.append("bankfile.bnk");
+            fileout.append(directory.filename().string() + ".bnk");
             cout << "Selected path: " << directory << endl;
             cout << "Selected file: " << fileout << endl;
             char type;
@@ -105,7 +105,9 @@ int main()
                 fileContents.resize(fileSize);
 
                 loadingStream.seekg(0, ios_base::beg);
-                loadingStream.read(&fileContents[0], fileSize);
+                if (fileSize > 0) {
+                    loadingStream.read(&fileContents[0], fileSize);
+                }
                 file.data = fileContents;
                 cout << fileSize << " bytes in ";
                 file.fileSize = fileSize;
