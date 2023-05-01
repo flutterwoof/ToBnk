@@ -1,3 +1,5 @@
+# ToBnk
+
 This tool creates a .bnk file, which is used by Rez Infinite to hold .wav and .xwma files, which are the audio samples used by the MIDI instruments (Programs) defined in .mpb files (MIDI Program Banks). With ToBnk, you provide a folder as input and the tool outputs a .bnk file that contains all the files in that folder, excluding subfolders or files with the extension ".bnk".
 
 In Rez Infinite, the .bnk files only ever contain .wav and .xwma files, while all other files for the game are stored in its .dat files. The .bnk container is very generic, however, and you could put any file type into here. There would be no point doing that and I expect that the game would ignore them, but you could do that, and ToBnk will include those files in the end .bnk.
